@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#B87800">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="製程助手">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head><body>
+<title>製程助手 V2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one-hand phone tool — single column, sticky header, bottom tab bar; amber accent borrowed from the litho yellow room */
+:root{
+  --bg:#EEF0F1; --card:#FFFFFF; --ink:#161A1D; --muted:#5E676D; --line:#D4D9DC;
+  --accent:#B87800; --accent-ink:#FFFFFF; --accent-soft:#FBF0D9;
+  --ok:#23804A; --ok-soft:#DFF1E6; --bad:#B42318; --bad-soft:#FBE4E1; --info:#1F5FA8;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101315; --card:#191E21; --ink:#E7ECEE; --muted:#96A2A8; --line:#2C3438;
+  --accent:#F0B13A; --accent-ink:#1A1300; --accent-soft:#3A2C0E;
+  --ok:#5CC488; --ok-soft:#173826; --bad:#F2766C; --bad-soft:#41201D; --info:#7DB2F0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101315; --card:#191E21; --ink:#E7ECEE; --muted:#96A2A8; --line:#2C3438;
+  --accent:#F0B13A; --accent-ink:#1A1300; --accent-soft:#3A2C0E;
+  --ok:#5CC488; --ok-soft:#173826; --bad:#F2766C; --bad-soft:#41201D; --info:#7DB2F0; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;margin:0;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--card)}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);border-bottom:1px solid var(--line)}
+.top-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:10px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top h1{font-size:18px;font-weight:900;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sync{font-size:12px;font-family:var(--f-mono);padding:3px 8px;border-radius:999px;background:var(--bg);color:var(--muted);white-space:nowrap}
+.sync.ok{color:var(--ok);background:var(--ok-soft)} .sync.err{color:var(--bad);background:var(--bad-soft)} .sync.local{color:var(--info)}
+main{max-width:760px;margin:0 auto;padding-top:14px;padding-bottom:calc(96px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.tabs-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.tabs button{background:none;border:0;color:var(--muted);font:inherit;font-size:13px;padding:8px 0 10px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;min-height:58px}
+.tabs button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tabs button.on{color:var(--accent);font-weight:700}
+h2{font-size:15px;color:var(--muted);font-weight:700;margin:22px 0 8px;letter-spacing:.04em}
+h2:first-child{margin-top:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px;min-width:0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grow{flex:1;min-width:0}
+.muted{color:var(--muted);font-size:14px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.btn{font:inherit;font-size:15px;font-weight:700;min-height:48px;padding:10px 16px;border-radius:10px;border:1.5px solid var(--accent);background:var(--accent);color:var(--accent-ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.plain{background:var(--card);color:var(--ink);border-color:var(--line);font-weight:500}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.bad{background:transparent;border-color:var(--bad);color:var(--bad)}
+.btn.sm{min-height:38px;padding:6px 12px;font-size:14px}
+.btn.wide{width:100%}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--info);outline-offset:2px}
+input[type=text],input[type=date],input[type=number],textarea,select{font:inherit;font-size:16px;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-height:46px}
+textarea{min-height:84px;resize:vertical}
+label.f{display:block;margin-bottom:10px}
+label.f span{display:block;font-size:13px;color:var(--muted);margin-bottom:3px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok)}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--bg);color:var(--muted);white-space:nowrap}
+.pill.run{background:var(--accent-soft);color:var(--accent)} .pill.done{background:var(--ok-soft);color:var(--ok)} .pill.bad{background:var(--bad-soft);color:var(--bad)}
+.step{border:1.5px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:10px;overflow:hidden}
+.step.cur{border-color:var(--accent)}
+.step.done{opacity:.92}
+.step-h{display:flex;gap:12px;align-items:center;padding:12px 14px;cursor:pointer;width:100%;background:none;border:0;font:inherit;color:inherit;text-align:left;min-height:60px}
+.step-n{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-mono);font-weight:700;font-size:13px;background:var(--bg);flex:none}
+.step.done .step-n{background:var(--ok);color:#fff}
+.step.cur .step-n{background:var(--accent);color:var(--accent-ink)}
+.step-b{padding:4px 14px 16px;border-top:1px solid var(--line)}
+.lesson{background:var(--accent-soft);border-radius:10px;padding:10px 12px;margin:12px 0;font-size:14.5px}
+.lesson b{display:block;color:var(--accent);font-size:13px}
+.sop{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.sop button{display:flex;gap:12px;align-items:flex-start;text-align:left;font:inherit;font-size:16px;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:12px;min-height:54px;cursor:pointer;width:100%}
+.sop button .box{width:24px;height:24px;border:2px solid var(--muted);border-radius:6px;flex:none;display:grid;place-items:center;margin-top:1px}
+.sop button.on{background:var(--ok-soft);border-color:var(--ok)}
+.sop button.on .box{background:var(--ok);border-color:var(--ok);color:#fff}
+.sop button.on .t{text-decoration:line-through;color:var(--muted)}
+.sop small{display:block;font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.ptab{width:100%;border-collapse:collapse;font-size:15px}
+.ptab td,.ptab th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+.ptab th{font-size:12px;color:var(--muted);font-weight:500}
+.ptab input{min-height:42px;padding:8px}
+.ptab .pl{font-family:var(--f-mono);color:var(--muted);white-space:nowrap}
+.timer{display:flex;align-items:center;gap:12px;background:var(--bg);border-radius:10px;padding:10px 12px;margin:10px 0}
+.timer .tt{font-family:var(--f-mono);font-size:30px;font-weight:700;flex:1;min-width:0}
+body.alarm .timer{animation:fl .6s steps(2) infinite}
+@keyframes fl{0%{background:var(--bad-soft)}100%{background:var(--accent-soft)}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{font-size:13px;padding:3px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--line)}
+.chip b{color:var(--muted);font-weight:500;margin-right:4px}
+.list-btn{display:flex;width:100%;gap:10px;align-items:center;text-align:left;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;min-height:58px}
+.list-btn .t{font-weight:700}
+.empty{text-align:center;color:var(--muted);padding:28px 12px;border:1.5px dashed var(--line);border-radius:12px}
+.sheet-bg{position:fixed;inset:0;background:rgb(0 0 0 / .45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--card);width:100%;max-width:760px;max-height:86vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sheet h3{margin:0 0 10px;font-size:18px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;z-index:30;max-width:calc(100% - 32px)}
+.note-item{border-left:3px solid var(--accent);padding:6px 10px;margin:6px 0;background:var(--bg);border-radius:0 8px 8px 0;font-size:14.5px}
+.note-item small{display:block;color:var(--muted);font-family:var(--f-mono);font-size:11.5px}
+pre.out{white-space:pre-wrap;word-break:break-all;font-family:var(--f-mono);font-size:12px;background:var(--bg);border-radius:8px;padding:10px;max-height:240px;overflow:auto}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.cat{font-size:13px;color:var(--muted);font-weight:700;margin:16px 0 6px}
+@media (prefers-reduced-motion:reduce){body.alarm .timer{animation:none;background:var(--bad-soft)}}
+</style>
+
+<header class="top"><div class="top-in"><h1 id="hdr">製程助手</h1><span class="sync" id="sync">載入中</span></div></header>
+<main id="view"><div class="empty">載入中…</div></main>
+<nav class="tabs" aria-label="主選單"><div class="tabs-in">
+<button data-tab="today"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>今日</button>
+<button data-tab="quick"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>快記</button>
+<button data-tab="lib"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M8 7h8M8 11h6"/></svg>Recipe</button>
+<button data-tab="more"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>資料</button>
+</div></nav>
+<input type="file" id="fileIn" accept=".json,application/json" hidden>
+
+<script>
+// ================= utilities =================
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=p=>p+'_'+Math.random().toString(16).slice(2,14).padEnd(12,'0');
+const pad=n=>String(n).padStart(2,'0');
+const now=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`};
+const today=()=>now().slice(0,10);
+const hm=s=>s?String(s).slice(11,16):'';
+const clone=o=>JSON.parse(JSON.stringify(o));
+const sopLines=t=>String(t||'').split(/\r?\n/).map(l=>l.trim().replace(/^[\-\*\d\.\)\(、\s]+/,'').trim()).filter(Boolean);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function toast(msg){document.querySelectorAll('.toast').forEach(x=>x.remove());const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
+
+// ================= store =================
+const COLS=['recipes','runs','templates','notes'];
+const S={recipes:{},runs:{},templates:{},notes:{}};
+let mode='local',db=null,canWrite=true,loaded=false;
+const LKEY='pa2-data',UKEY='pa2-ui';
+let ui={tab:'today',runId:null,open:null,recipeId:null,q:'',lessonFor:null,sheet:null,pick:''};
+try{Object.assign(ui,JSON.parse(localStorage.getItem(UKEY))||{});ui.sheet=null;ui.lessonFor=null}catch(e){}
+const saveUi=()=>{try{localStorage.setItem(UKEY,JSON.stringify({tab:ui.tab,runId:ui.runId,open:ui.open,recipeId:ui.recipeId}))}catch(e){}};
+function saveLocal(){try{localStorage.setItem(LKEY,JSON.stringify(S))}catch(e){setSync('err','本機儲存失敗')}}
+function loadLocal(){try{const d=JSON.parse(localStorage.getItem(LKEY));if(d)COLS.forEach(c=>S[c]=d[c]||{})}catch(e){}}
+function setSync(kind,txt){const el=$('#sync');el.className='sync '+kind;el.textContent=txt}
+
+const dirty=new Set();let writing=null,pumping=false;const timers={};
+function put(col,obj,{quiet=false,delay=0}={}){obj.updated_at=now();S[col][obj.id]=obj;if(!quiet)render();schedule(col,obj.id,delay)}
+function del(col,id){delete S[col][id];render();schedule(col,id,0)}
+function schedule(col,id,delay){const k=col+'/'+id;clearTimeout(timers[k]);if(delay){timers[k]=setTimeout(()=>{timers[k]=null;persist(k)},delay)}else{timers[k]=null;persist(k)}}
+function persist(k){if(mode!=='cloud'){saveLocal();return}dirty.add(k);pump()}
+async function pump(){if(pumping)return;pumping=true;setSync('','同步中…');
+ while(dirty.size){const k=dirty.values().next().value;dirty.delete(k);writing=k;const [col,id]=k.split('/');const obj=S[col][id];
+  for(let attempt=0;attempt<2;attempt++){try{const ref=db.collection(col).doc(id);if(obj)await ref.set(clone(obj));else await ref.delete();break}
+   catch(e){if(e&&e.code==='unavailable'&&attempt===0){await sleep(600+Math.random()*900);continue}
+    if(e&&e.code==='invalid_argument'){canWrite=false;setSync('err','唯讀');toast('沒有寫入權限，這次的修改不會被保存')}
+    else if(e&&e.code==='quota_exceeded'){setSync('err','空間已滿');toast('雲端資料已滿，請匯出備份後刪除舊的快記')}
+    else{setSync('err','未同步');toast('同步失敗，稍後會在下次修改時重試')}
+    break}}
+  writing=null}
+ pumping=false;if(canWrite&&!$('#sync').classList.contains('err'))setSync('ok','已同步 '+hm(now()))}
+
+let needRender=false;
+function typing(){const a=document.activeElement;return a&&a.closest&&a.closest('#view, .sheet')&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)}
+function softRender(){if(typing()){needRender=true;return}render()}
+document.addEventListener('focusout',()=>setTimeout(()=>{if(needRender&&!typing()){needRender=false;render()}},50));
+
+async function initStore(){
+ let ns=null;
+ if(window.claude&&typeof window.claude.use==='function'){try{ns=await window.claude.use('db')}catch(e){ns=null}}
+ if(!ns){mode='local';loadLocal();loaded=true;setSync('local','只存在這台裝置');render();return}
+ db=ns;mode='cloud';setSync('','連線中…');
+ try{const u=await window.claude.use('user');if(u&&typeof u.can==='function'){const c=await u.can('data.write');if(c===false){canWrite=false}}}catch(e){}
+ let pendingFirst=new Set(COLS);
+ const slow=setTimeout(()=>{if(pendingFirst.size)setSync('err','連不上雲端，資料可能未更新')},10000);
+ COLS.forEach(col=>{db.collection(col).onSnapshot(snap=>{const m={};snap.docs.forEach(d=>{m[d.id]=clone(d.data())});
+   const ids=new Set([...Object.keys(S[col]),...Object.keys(m)]);
+   ids.forEach(id=>{const k=col+'/'+id;if(dirty.has(k)||writing===k||timers[k]){if(S[col][id])m[id]=S[col][id];else delete m[id]}});
+   S[col]=m;if(!snap.metadata.fromCache){pendingFirst.delete(col);if(!pendingFirst.size){clearTimeout(slow);loaded=true;if(!pumping)setSync(canWrite?'ok':'err',canWrite?'雲端同步':'唯讀')}}
+   loaded=true;softRender()},err=>{setSync('err','連線中斷');toast('雲端連線中斷：'+(err&&err.code||''))})});
+}
+
+// ================= model helpers =================
+const runs=()=>Object.values(S.runs).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.created_at||'').localeCompare(a.created_at||''));
+const recipes=()=>Object.values(S.recipes).sort((a,b)=>(a.category||'').localeCompare(b.category||'')||(a.material||'').localeCompare(b.material||'')||(a.name||'').localeCompare(b.name||''));
+const progress=r=>{const n=(r.steps||[]).length,d=(r.steps||[]).filter(s=>s.completed).length;return{n,d,p:n?d/n:0}};
+const curIdx=r=>(r.steps||[]).findIndex(s=>!s.completed);
+function stepFromRecipe(rc){const sop=rc.sop||'';return{instance_id:uid('step'),recipe_id:rc.id,category:rc.category||'',material:rc.material||'',name:rc.name||'',equipment:rc.equipment||'',duration_min:String(rc.duration_min||''),planned_parameters:clone(rc.parameters||[]),actual_parameters:[],sop,sop_checks:sopLines(sop).map(()=>false),sop_check_times:[],recipe_notes:rc.notes||'',run_notes:'',anomaly:false,completed:false,started_at:'',completed_at:''}}
+function newRun(title,date,tplId){const t=tplId&&S.templates[tplId];return{id:uid('run'),title:title||'今日製程',date:date||today(),device:'',wafer:'',operator:'',objective:'',global_notes:'',created_at:now(),updated_at:now(),steps:t?clone(t.steps).map(s=>{const rc=S.recipes[s.recipe_id];if(rc){if(rc.sop)s.sop=rc.sop;if(rc.notes)s.recipe_notes=rc.notes}return s}).map(s=>Object.assign(s,{instance_id:uid('step'),actual_parameters:[],sop_checks:sopLines(s.sop).map(()=>false),sop_check_times:[],run_notes:'',completed:false,started_at:'',completed_at:'',anomaly:false})):[]}}
+function setPath(obj,path,val){const ks=path.split('.');let o=obj;for(let i=0;i<ks.length-1;i++){const k=ks[i];if(o[k]==null)o[k]=/^\d+$/.test(ks[i+1])?[]:{};o=o[k]}o[ks[ks.length-1]]=val}
+function knownEquip(){const s=new Set(['ALD B','NFC ALD','RTD004','E10','E11','C10','T28','化學實驗室']);recipes().forEach(r=>r.equipment&&s.add(r.equipment.trim()));return [...s].filter(Boolean).sort((a,b)=>b.length-a.length)}
+function knownMat(){const s=new Set(['HfO2','HfON','Al2O3','AlCO','TiN','TaN','Ti','SiO2','Si','IGZO','PR']);recipes().forEach(r=>(r.material||'').split(/[\/+ ]/).forEach(m=>m.length>1&&s.add(m.trim())));return [...s].filter(Boolean).sort((a,b)=>b.length-a.length)}
+function parseNote(t){const up=t.toUpperCase();const eq=knownEquip().find(e=>up.includes(e.toUpperCase()))||'';const mats=[];
+ knownMat().forEach(m=>{const re=new RegExp('(^|[^A-Za-z])'+m.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![A-Za-z0-9])','i');if(re.test(t)&&!mats.some(x=>x.toLowerCase().includes(m.toLowerCase())))mats.push(m)});
+ const params=[];const re=/(\d+(?:\.\d+)?)\s*(nm|Å|A\/sec|°C|℃|C|s|sec|min|cycles?|sccm|W|mTorr|Torr|V)(?![A-Za-z])/gi;let m;
+ while((m=re.exec(t))){let u=m[2];if(/^(c|℃)$/i.test(u))u='°C';if(/^sec$/i.test(u))u='s';params.push({value:m[1],unit:u})}
+ return{equipment:eq,materials:mats,params}}
+
+// ================= views =================
+const ICON={check:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>'};
+function render(){
+ if(!loaded){return}
+ document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===ui.tab));
+ let html='';
+ if(ui.tab==='today')html=ui.runId&&S.runs[ui.runId]?vRun(S.runs[ui.runId]):vToday();
+ else if(ui.tab==='quick')html=vQuick();
+ else if(ui.tab==='lib')html=ui.recipeId&&S.recipes[ui.recipeId]?vRecipe(S.recipes[ui.recipeId]):vLib();
+ else html=vMore();
+ const y=window.scrollY;$('#view').innerHTML=html;window.scrollTo(0,y);
+ $('#hdr').textContent=ui.tab==='today'&&ui.runId&&S.runs[ui.runId]?S.runs[ui.runId].title:({today:'製程助手',quick:'快記',lib:'Recipe 庫',more:'資料與設定'})[ui.tab];
+ renderSheet();tickTimers();saveUi()}
+
+function vToday(){const rs=runs();const act=rs.filter(r=>progress(r).p<1||!r.steps.length),fin=rs.filter(r=>r.steps.length&&progress(r).p===1);
+ let h=`<div class="row" style="margin-bottom:6px"><button class="btn grow" data-act="newRun">＋ 新增今天的 run</button></div>`;
+ h+='<h2>進行中</h2>';
+ if(!act.length)h+=`<div class="empty">還沒有進行中的 run。<br>按上面的按鈕建立，或從 Recipe 庫開始。</div>`;
+ act.forEach(r=>h+=runCard(r));
+ if(fin.length){h+='<h2>已完成</h2>';fin.slice(0,20).forEach(r=>h+=runCard(r))}
+ return h}
+function runCard(r){const p=progress(r),ci=curIdx(r),nx=ci>=0?r.steps[ci]:null;const bad=r.steps.some(s=>s.anomaly);
+ return `<button class="list-btn" data-act="openRun" data-id="${esc(r.id)}"><div class="grow"><div class="row"><span class="t grow">${esc(r.title)}</span>${bad?'<span class="pill bad">異常</span>':''}<span class="pill ${p.p===1&&p.n?'done':'run'}">${p.d}/${p.n}</span></div>
+ <div class="muted">${esc(r.date)}${r.wafer?' · '+esc(r.wafer):''}${nx?' · 下一步：'+esc(nx.name):p.n?' · 全部完成':''}</div><div class="bar" style="margin-top:6px"><i style="width:${p.p*100}%"></i></div></div></button>`}
+
+function vRun(r){const p=progress(r),ci=curIdx(r);if(ui.open==null||(ui.open>=0&&!r.steps[ui.open]))ui.open=ci>=0?ci:null;
+ let h=`<div class="row" style="margin-bottom:10px"><button class="btn plain sm" data-act="back">← 全部 run</button><span class="grow"></span><button class="btn ghost sm" data-act="runInfo">資訊</button><button class="btn ghost sm" data-act="runMenu">⋯</button></div>`;
+ h+=`<div class="card"><div class="row"><div class="grow"><div class="muted">${esc(r.date)}${r.wafer?' · 晶片 '+esc(r.wafer):''}${r.device?' · '+esc(r.device):''}</div>${r.objective?`<div style="margin-top:2px">${esc(r.objective)}</div>`:''}</div><span class="mono" style="font-size:22px;font-weight:700">${p.d}/${p.n}</span></div><div class="bar" style="margin-top:8px"><i style="width:${p.p*100}%"></i></div></div>`;
+ if(!r.steps.length)h+=`<div class="empty">這個 run 還沒有步驟。</div>`;
+ r.steps.forEach((s,i)=>h+=vStep(r,s,i,i===ci));
+ h+=`<div class="row" style="margin-top:6px"><button class="btn ghost grow" data-act="addStep">＋ 加步驟</button></div>`;
+ const ns=Object.values(S.notes).filter(n=>n.run_id===r.id).sort((a,b)=>b.at.localeCompare(a.at));
+ h+=`<h2>這個 run 的快記</h2>`+(ns.length?ns.map(noteItem).join(''):`<div class="muted">在「快記」分頁記下的內容，選這個 run 就會出現在這裡。</div>`);
+ h+=`<h2>整體備註</h2><textarea data-bind="runs|${esc(r.id)}|global_notes" placeholder="整批的狀況、晶片位置、下次要改的…">${esc(r.global_notes)}</textarea>`;
+ return h}
+
+function vStep(r,s,i,isCur){const open=ui.open===i;const st=s.completed?'done':isCur?'cur':'';
+ const tag=s.completed?`<span class="pill done">${esc(hm(s.completed_at))||'完成'}</span>`:s.started_at?`<span class="pill run">進行中</span>`:'';
+ let h=`<div class="step ${st}"><button class="step-h" data-act="toggleStep" data-i="${i}"><span class="step-n">${s.completed?ICON.check:i+1}</span><span class="grow"><b>${esc(s.name||'(未命名步驟)')}</b><span class="muted" style="display:block">${esc([s.category,s.material,s.equipment].filter(Boolean).join(' · '))}</span></span>${s.anomaly?'<span class="pill bad">異常</span>':''}${tag}</button>`;
+ if(!open)return h+'</div>';
+ const rc=S.recipes[s.recipe_id];const L=(rc&&rc.lessons||[]).slice(-3).reverse();
+ h+='<div class="step-b">';
+ if(L.length)h+=`<div class="lesson"><b>上次踩雷 / 注意</b>${L.map(l=>`<div>· ${esc(l.text)} <span class="muted mono" style="font-size:11px">${esc((l.date||'').slice(0,10))}</span></div>`).join('')}</div>`;
+ if(s.recipe_notes)h+=`<div class="muted" style="margin:10px 0">Recipe 備註：${esc(s.recipe_notes)}</div>`;
+ // timer
+ const dm=parseFloat(s.duration_min);
+ if(dm>0||s.timer_start){h+=`<div class="timer"><span class="tt" data-timer="${i}">${dm?fmtMin(dm*60):'--:--'}</span>${s.timer_start?`<button class="btn bad sm" data-act="timerStop" data-i="${i}">停止</button>`:`<button class="btn sm" data-act="timerStart" data-i="${i}">開始計時 ${dm?dm+' 分':''}</button>`}</div>`}
+ // SOP
+ const lines=sopLines(s.sop);h+=`<h2>SOP</h2>`;
+ if(lines.length){h+='<div class="sop">'+lines.map((l,k)=>{const on=!!(s.sop_checks||[])[k];const t=(s.sop_check_times||[])[k];return `<button class="${on?'on':''}" data-act="sop" data-i="${i}" data-k="${k}"><span class="box">${on?ICON.check:''}</span><span class="grow"><span class="t">${esc(l)}</span>${on&&t?`<small>${esc(hm(t))}</small>`:''}</span></button>`}).join('')+'</div>'}
+ else h+=`<div class="muted">這個步驟還沒有 SOP。${rc?`<button class="btn ghost sm" data-act="editRecipeFromStep" data-id="${esc(rc.id)}">去 Recipe 寫 SOP</button>`:''}</div>`;
+ if(rc&&rc.sop&&rc.sop!==s.sop)h+=`<button class="btn ghost sm" style="margin-top:6px" data-act="reloadSop" data-i="${i}">載入 Recipe 最新的 SOP</button>`;
+ // params
+ const pl=s.planned_parameters||[],ac=s.actual_parameters||[];const n=Math.max(pl.length,ac.length);
+ h+=`<h2>參數</h2>`;
+ if(n){h+=`<table class="ptab"><tr><th>項目</th><th>計畫</th><th style="width:40%">實際</th></tr>`;
+  for(let k=0;k<n;k++){const P=pl[k]||{},A=ac[k]||{};const extra=!pl[k];
+   h+=`<tr><td>${extra?`<input type="text" data-param="${i}|${k}|name" value="${esc(A.name)}" placeholder="名稱">`:esc(P.name)}</td><td class="pl">${extra?'—':esc(P.value)+' '+esc(P.unit)}</td><td><div class="row" style="flex-wrap:nowrap;gap:4px"><input type="text" inputmode="decimal" data-param="${i}|${k}|value" value="${esc(A.value)}" placeholder="${esc(P.value||'')}"><span class="muted">${esc(A.unit||P.unit||'')}</span></div></td></tr>`}
+  h+='</table>'}
+ h+=`<div class="row" style="margin-top:8px">${pl.length?`<button class="btn plain sm" data-act="sameAsPlan" data-i="${i}">全部同計畫</button>`:''}<button class="btn plain sm" data-act="addParam" data-i="${i}">＋ 參數</button></div>`;
+ // notes
+ h+=`<h2>這一步的紀錄</h2><textarea data-bind="runs|${esc(r.id)}|steps.${i}.run_notes" placeholder="實際狀況、機台畫面讀值、和計畫不同的地方">${esc(s.run_notes)}</textarea>`;
+ h+=`<div class="row" style="margin-top:8px"><button class="btn ${s.anomaly?'bad':'plain'} sm" data-act="anomaly" data-i="${i}">${s.anomaly?'⚠ 已標記異常':'標記異常'}</button><span class="grow"></span><span class="muted mono" style="font-size:12px">${s.started_at?'開始 '+esc(hm(s.started_at)):''}${s.completed_at?' → 完成 '+esc(hm(s.completed_at)):''}</span></div>`;
+ // lesson / complete
+ if(ui.lessonFor===i){h+=`<div class="lesson" style="margin-top:12px"><b>這次學到什麼 / 踩到什麼雷？（會寫回 Recipe，下次自動提醒）</b><textarea id="lessonTxt" placeholder="例：OE time 設 0 s 會失敗，至少 1 s" style="margin-top:6px"></textarea><div class="row" style="margin-top:8px"><button class="btn ok grow" data-act="completeSave" data-i="${i}">完成並存檔</button><button class="btn plain" data-act="completeSkip" data-i="${i}">沒有，直接完成</button></div></div>`}
+ else if(!s.completed)h+=`<div class="row" style="margin-top:14px">${s.started_at?'':`<button class="btn ghost" data-act="start" data-i="${i}">開始</button>`}<button class="btn ok grow" data-act="complete" data-i="${i}">✓ 完成這一步</button></div>`;
+ else h+=`<div class="row" style="margin-top:14px"><button class="btn plain sm" data-act="undo" data-i="${i}">取消完成</button>${s.lesson?`<span class="muted grow">已記錄：${esc(s.lesson)}</span>`:''}</div>`;
+ h+=`<div class="row" style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px"><button class="btn plain sm" data-act="mvUp" data-i="${i}">上移</button><button class="btn plain sm" data-act="mvDn" data-i="${i}">下移</button><span class="grow"></span><button class="btn bad sm" data-act="rmStep" data-i="${i}">刪除步驟</button></div>`;
+ return h+'</div></div>'}
+const fmtMin=sec=>{sec=Math.max(0,Math.round(sec));const m=Math.floor(sec/60),s=sec%60;return pad(m)+':'+pad(s)};
+
+function noteItem(n){const p=n.parsed||{};const r=n.run_id&&S.runs[n.run_id];return `<div class="note-item"><small>${esc(n.at.slice(5,16))}${r?' · '+esc(r.title):''}${p.equipment?' · '+esc(p.equipment):''}</small>${esc(n.text)} <button class="btn plain sm" style="min-height:28px;padding:0 8px;float:right" data-act="rmNote" data-id="${esc(n.id)}" aria-label="刪除">刪</button></div>`}
+
+function vQuick(){const act=runs().filter(r=>progress(r).p<1||!r.steps.length);const def=ui.runId&&S.runs[ui.runId]?ui.runId:(act[0]&&act[0].id)||'';
+ const ns=Object.values(S.notes).sort((a,b)=>b.at.localeCompare(a.at)).slice(0,40);
+ return `<div class="card"><textarea id="qTxt" style="min-height:120px" placeholder="出無塵室時用鍵盤的麥克風講一句：\nALD B HfO2 1.5nm 250C 跑到 17 cycles 停機">${esc(ui.qDraft||'')}</textarea>
+ <div class="chips" id="qChips"></div>
+ <label class="f"><span>掛在哪個 run</span><select id="qRun"><option value="">（不掛）</option>${runs().map(r=>`<option value="${esc(r.id)}" ${r.id===def?'selected':''}>${esc(r.date)} · ${esc(r.title)}</option>`).join('')}</select></label>
+ <button class="btn wide" data-act="saveNote">記下來</button></div>
+ <h2>最近的快記</h2>${ns.length?ns.map(noteItem).join(''):'<div class="empty">還沒有快記。</div>'}`}
+
+function vLib(){const q=(ui.q||'').toLowerCase();const rs=recipes().filter(r=>!q||[r.name,r.category,r.material,r.equipment,r.tags,r.sop,r.notes].join(' ').toLowerCase().includes(q));
+ let h=`<div class="row" style="margin-bottom:8px"><input type="text" id="libQ" class="grow" placeholder="搜尋 Recipe、機台、材料、標籤" value="${esc(ui.q||'')}" style="flex:1"><button class="btn" data-act="newRecipe">＋</button></div>`;
+ if(!rs.length)return h+`<div class="empty">${q?'找不到符合的 Recipe。':'Recipe 庫是空的。到「資料」分頁匯入 V1 的 recipes.json，或按 ＋ 新增。'}</div>`;
+ let last='';rs.forEach(r=>{if(r.category!==last){last=r.category;h+=`<div class="cat">${esc(r.category||'未分類')}</div>`}
+  const nl=(r.lessons||[]).length,ns=sopLines(r.sop).length;
+  h+=`<button class="list-btn" data-act="openRecipe" data-id="${esc(r.id)}"><div class="grow"><div class="t">${esc(r.name||'(未命名)')}</div><div class="muted">${esc([r.material,r.equipment,r.duration_min?r.duration_min+' 分':''].filter(Boolean).join(' · '))}</div></div>${ns?`<span class="pill">SOP ${ns}</span>`:'<span class="pill bad">無 SOP</span>'}${nl?`<span class="pill run">踩雷 ${nl}</span>`:''}</button>`});
+ return h}
+
+function vRecipe(r){const B=f=>`data-bind="recipes|${esc(r.id)}|${f}"`;const cats=[...new Set(recipes().map(x=>x.category).filter(Boolean))];
+ let h=`<div class="row" style="margin-bottom:10px"><button class="btn plain sm" data-act="backLib">← Recipe 庫</button><span class="grow"></span><button class="btn ghost sm" data-act="useRecipe" data-id="${esc(r.id)}">加進 run</button><button class="btn ghost sm" data-act="dupRecipe" data-id="${esc(r.id)}">複製</button></div>`;
+ h+=`<div class="card"><label class="f"><span>Recipe 名稱</span><input type="text" ${B('name')} value="${esc(r.name)}"></label>
+ <div class="grid2"><label class="f"><span>類別</span><input type="text" list="catList" ${B('category')} value="${esc(r.category)}"></label><label class="f"><span>材料</span><input type="text" ${B('material')} value="${esc(r.material)}"></label>
+ <label class="f"><span>機台</span><input type="text" ${B('equipment')} value="${esc(r.equipment)}"></label><label class="f"><span>預估時間（分）</span><input type="text" inputmode="decimal" ${B('duration_min')} value="${esc(r.duration_min)}"></label></div>
+ <label class="f"><span>標籤</span><input type="text" ${B('tags')} value="${esc(r.tags)}" placeholder="dry etch, BEOL"></label>
+ <datalist id="catList">${cats.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>`;
+ h+=`<h2>參數</h2><div class="card">`+(r.parameters||[]).map((p,k)=>`<div class="row" style="flex-wrap:nowrap;gap:6px;margin-bottom:6px"><input type="text" ${B('parameters.'+k+'.name')} value="${esc(p.name)}" placeholder="名稱" style="flex:2"><input type="text" ${B('parameters.'+k+'.value')} value="${esc(p.value)}" placeholder="值" style="flex:1.2"><input type="text" ${B('parameters.'+k+'.unit')} value="${esc(p.unit)}" placeholder="單位" style="flex:1"><button class="btn bad sm" data-act="rmRParam" data-k="${k}" aria-label="刪除參數">×</button></div>`).join('')+`<button class="btn plain sm" data-act="addRParam">＋ 參數</button></div>`;
+ h+=`<h2>SOP（一行一個步驟，進 run 會變成打勾清單）</h2><textarea ${B('sop')} style="min-height:160px" placeholder="確認腔體壓力\n載入晶片，記錄位置\n選 recipe\n完成後記錄實際讀值">${esc(r.sop)}</textarea>`;
+ h+=`<h2>備註</h2><textarea ${B('notes')}>${esc(r.notes)}</textarea>`;
+ const L=(r.lessons||[]);h+=`<h2>踩雷紀錄（${L.length}）</h2>`+(L.length?L.map((l,k)=>`<div class="note-item"><small>${esc((l.date||'').slice(0,16))}${l.run?' · '+esc(l.run):''}</small>${esc(l.text)} <button class="btn plain sm" style="min-height:28px;padding:0 8px;float:right" data-act="rmLesson" data-k="${k}">刪</button></div>`).join(''):'<div class="muted">完成步驟時寫下的「學到 / 踩雷」會累積在這裡。</div>');
+ h+=`<div class="row" style="margin-top:24px"><span class="grow"></span><button class="btn bad sm" data-act="rmRecipe" data-id="${esc(r.id)}">刪除這個 Recipe</button></div>`;
+ return h}
+
+function vMore(){const c=k=>Object.keys(S[k]).length;
+ return `<div class="card"><div class="row"><div class="grow"><b>${mode==='cloud'?'雲端同步':'只存在這台裝置'}</b><div class="muted">${mode==='cloud'?'在手機和電腦打開同一個連結，看到的是同一份資料。':'資料存在這個瀏覽器裡。換手機或清除瀏覽器資料會不見，記得定期匯出備份。'}</div></div></div>
+ <div class="muted mono" style="margin-top:8px">Recipe ${c('recipes')} · Run ${c('runs')} · 模板 ${c('templates')} · 快記 ${c('notes')}</div></div>
+ <h2>匯入</h2><div class="card"><div class="muted" style="margin-bottom:8px">支援：V1 的 recipes.json、templates.json、run 紀錄（例如 2026-08-27_RG moscap.json），以及本 App 的完整備份。相同 id 會被覆蓋。</div>
+ <div class="row"><button class="btn grow" data-act="importFile">選擇 JSON 檔</button><button class="btn plain" data-act="importPaste">貼上內容</button></div></div>
+ <h2>匯出</h2><div class="card"><div class="seg"><button class="btn plain" data-act="exportBackup">完整備份 .json</button><button class="btn plain" data-act="exportCsv">分析用 .csv（每個參數一列）</button><button class="btn plain" data-act="exportRecipes">V1 格式 recipes.json</button></div>
+ <div class="muted" style="margin-top:8px">單一 run 的 V1 格式 JSON：在 run 頁面按右上角 ⋯。</div></div>
+ <h2>使用方式</h2><div class="card muted" style="font-size:14.5px">
+ <p style="margin-top:0"><b>手機上像 App 一樣用：</b>iPhone 用 Safari 打開這個頁面 → 分享 → 加入主畫面；Android 用 Chrome → ⋮ → 加到主畫面。</p>
+ <p><b>現場流程：</b>今日 → 新增 run（可從模板）→ 打開目前步驟 → 計時、SOP 打勾、填實際參數 → 完成時寫下學到/踩雷，會自動回寫到 Recipe，下次同一步驟會先提醒你。</p>
+ <p style="margin-bottom:0"><b>給 Claude 分析：</b>雲端模式下，Claude 可以直接讀這份資料，例如「整理這個月所有 ALD 步驟的實際厚度」。</p></div>`}
+
+// ================= sheets (modals) =================
+function renderSheet(){let old=$('.sheet-bg');if(old)old.remove();if(!ui.sheet)return;const s=ui.sheet;let h='';
+ if(s.type==='newRun'){const tps=Object.values(S.templates);h=`<h3>新增 run</h3><label class="f"><span>名稱</span><input type="text" id="nrTitle" value="${esc(s.title||'')}" placeholder="例：RG moscap 第 3 批"></label><div class="grid2"><label class="f"><span>日期</span><input type="date" id="nrDate" value="${today()}"></label><label class="f"><span>晶片</span><input type="text" id="nrWafer" placeholder="例：no11"></label></div>
+  <label class="f"><span>從模板開始</span><select id="nrTpl"><option value="">（空白，之後再加步驟）</option>${tps.map(t=>`<option value="${esc(t.id)}">${esc(t.name)}（${(t.steps||[]).length} 步）</option>`).join('')}</select></label>
+  <label class="f"><span>這批要回答的問題（一句話）</span><input type="text" id="nrObj" placeholder="例：N2+H2 PMA 是否降低 midgap Dit ≥30%？"></label>
+  <div class="row"><button class="btn grow" data-act="createRun">建立</button><button class="btn plain" data-act="closeSheet">取消</button></div>`}
+ else if(s.type==='pick'){const q=(ui.pick||'').toLowerCase();const rs=recipes().filter(r=>!q||[r.name,r.category,r.material,r.equipment].join(' ').toLowerCase().includes(q));
+  h=`<h3>加步驟</h3><input type="text" id="pickQ" placeholder="搜尋 Recipe" value="${esc(ui.pick||'')}" style="margin-bottom:10px">`+rs.map(r=>`<button class="list-btn" data-act="pickRecipe" data-id="${esc(r.id)}"><div class="grow"><div class="t">${esc(r.name)}</div><div class="muted">${esc([r.category,r.material,r.equipment].filter(Boolean).join(' · '))}</div></div></button>`).join('')+
+  `<div class="row" style="margin-top:10px"><input type="text" id="adhoc" placeholder="或輸入臨時步驟名稱" class="grow" style="flex:1"><button class="btn ghost" data-act="addAdhoc">加入</button></div><button class="btn plain wide" style="margin-top:10px" data-act="closeSheet">關閉</button>`}
+ else if(s.type==='runInfo'){const r=S.runs[ui.runId];const B=f=>`data-bind="runs|${esc(r.id)}|${f}"`;h=`<h3>Run 資訊</h3><label class="f"><span>名稱</span><input type="text" ${B('title')} value="${esc(r.title)}"></label><div class="grid2"><label class="f"><span>日期</span><input type="date" ${B('date')} value="${esc(r.date)}"></label><label class="f"><span>晶片</span><input type="text" ${B('wafer')} value="${esc(r.wafer)}"></label><label class="f"><span>元件</span><input type="text" ${B('device')} value="${esc(r.device)}"></label><label class="f"><span>操作者</span><input type="text" ${B('operator')} value="${esc(r.operator)}"></label></div><label class="f"><span>這批要回答的問題</span><textarea ${B('objective')}>${esc(r.objective)}</textarea></label><button class="btn wide" data-act="closeSheet">完成</button>`}
+ else if(s.type==='runMenu'){h=`<h3>${esc(S.runs[ui.runId].title)}</h3><div style="display:grid;gap:8px"><button class="btn plain" data-act="exportRun">匯出這個 run（V1 格式 JSON）</button><button class="btn plain" data-act="saveTpl">把步驟存成模板</button><button class="btn plain" data-act="dupRun">複製成新的 run（清空紀錄）</button>${s.confirmDel?`<button class="btn bad" data-act="rmRunYes">確定刪除？這個動作無法復原</button>`:`<button class="btn bad" data-act="rmRun">刪除這個 run</button>`}<button class="btn plain" data-act="closeSheet">關閉</button></div>`}
+ else if(s.type==='paste'){h=`<h3>貼上 JSON</h3><textarea id="pasteTxt" style="min-height:200px;font-family:var(--f-mono);font-size:13px" placeholder='{"categories": [...]}'></textarea><div class="row" style="margin-top:8px"><button class="btn grow" data-act="pasteGo">匯入</button><button class="btn plain" data-act="closeSheet">取消</button></div>`}
+ else if(s.type==='text'){h=`<h3>${esc(s.title)}</h3><div class="muted">這個環境不能直接下載檔案。全選下面的內容複製，貼到記事本存成 ${esc(s.filename)}。</div><pre class="out">${esc(s.text)}</pre><div class="row"><button class="btn grow" data-act="copyText">複製</button><button class="btn plain" data-act="closeSheet">關閉</button></div>`}
+ else if(s.type==='confirm'){h=`<h3>${esc(s.title)}</h3><div class="muted" style="margin-bottom:12px">${esc(s.body||'')}</div><div class="row"><button class="btn bad grow" data-act="confirmYes">${esc(s.yes||'確定')}</button><button class="btn plain" data-act="closeSheet">取消</button></div>`}
+ const bg=document.createElement('div');bg.className='sheet-bg';bg.innerHTML=`<div class="sheet" role="dialog" aria-modal="true">${h}</div>`;bg.addEventListener('click',e=>{if(e.target===bg){ui.sheet=null;renderSheet()}});document.body.appendChild(bg)}
+
+// ================= timers =================
+let tickH=null,wake=null;
+function tickTimers(){clearInterval(tickH);const r=ui.tab==='today'&&S.runs[ui.runId];if(!r)return;let any=false;
+ const upd=()=>{let ring=false;document.querySelectorAll('[data-timer]').forEach(el=>{const s=r.steps[+el.dataset.timer];if(!s)return;const dm=parseFloat(s.duration_min)||0;
+  if(s.timer_start){const left=dm*60-(Date.now()-s.timer_start)/1000;if(dm&&left<=0){el.textContent='時間到 +'+fmtMin(-left);ring=true}else el.textContent=dm?fmtMin(left):'+'+fmtMin((Date.now()-s.timer_start)/1000)}});
+  document.body.classList.toggle('alarm',ring);if(ring&&navigator.vibrate)try{navigator.vibrate(200)}catch(e){}};
+ r.steps.forEach(s=>{if(s.timer_start)any=true});upd();if(any)tickH=setInterval(upd,1000)}
+async function keepAwake(on){try{if(on&&'wakeLock'in navigator&&!wake)wake=await navigator.wakeLock.request('screen');if(!on&&wake){await wake.release();wake=null}}catch(e){wake=null}}
+
+// ================= files =================
+async function saveFile(filename,text){let dl=null;if(window.claude&&window.claude.use){try{dl=await window.claude.use('downloads')}catch(e){}}
+ if(dl){try{await dl.save({filename,data:text});toast('已匯出 '+filename);return}catch(e){if(e&&e.code==='declined')return}}
+ if(!window.claude){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'application/octet-stream'}));a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);return}catch(e){}}
+ ui.sheet={type:'text',title:'匯出內容',filename,text};renderSheet()}
+function csvCell(v){v=String(v??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+function buildCsv(){const rows=[['run','date','wafer','step_no','category','material','step','equipment','param','planned','actual','unit','started_at','completed_at','anomaly','step_notes']];
+ runs().forEach(r=>(r.steps||[]).forEach((s,i)=>{const pl=s.planned_parameters||[],ac=s.actual_parameters||[];const n=Math.max(pl.length,ac.length,1);
+  for(let k=0;k<n;k++){const P=pl[k]||{},A=ac[k]||{};rows.push([r.title,r.date,r.wafer,i+1,s.category,s.material,s.name,s.equipment,A.name||P.name||'',P.value||'',A.value||'',A.unit||P.unit||'',s.started_at,s.completed_at,s.anomaly?1:0,k===0?s.run_notes:''])}}));
+ return '﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n')}
+function v1Library(){const cats={};recipes().forEach(r=>{const c=r.category||'其他 Other',m=r.material||'General';cats[c]=cats[c]||{};(cats[c][m]=cats[c][m]||[]).push(Object.fromEntries(Object.entries(r).filter(([k])=>k!=='lessons')))});
+ return{categories:Object.entries(cats).map(([c,ms])=>({id:uid('cat'),name:c,materials:Object.entries(ms).map(([m,rs])=>({id:uid('mat'),name:m,recipes:rs}))}))}}
+function importData(d){let n={recipes:0,runs:0,templates:0,notes:0};const add=(col,o)=>{if(!o||!o.id)return;S[col][o.id]=o;schedule(col,o.id,0);n[col]++};
+ if(d&&d.app==='process-assistant-v2'){COLS.forEach(c=>(d[c]||[]).forEach(o=>add(c,o)))}
+ else if(d&&Array.isArray(d.categories)){d.categories.forEach(c=>(c.materials||[]).forEach(m=>(m.recipes||[]).forEach(r=>{const ex=S.recipes[r.id];add('recipes',Object.assign({lessons:ex&&ex.lessons||[]},r,{category:c.name,material:m.name,lessons:ex&&ex.lessons||r.lessons||[]}))})))}
+ else if(d&&Array.isArray(d.templates)){d.templates.forEach(t=>add('templates',t))}
+ else if(d&&Array.isArray(d.steps)&&d.id){add('runs',d)}
+ else throw new Error('看不出這是哪一種檔案（需要 categories、templates 或 steps 欄位）');
+ render();toast(`已匯入：Recipe ${n.recipes}、Run ${n.runs}、模板 ${n.templates}、快記 ${n.notes}`)}
+
+// ================= events =================
+document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;if(ui.tab===b.dataset.tab){if(b.dataset.tab==='today')ui.runId=null;if(b.dataset.tab==='lib')ui.recipeId=null}ui.tab=b.dataset.tab;window.scrollTo(0,0);render()});
+document.addEventListener('input',e=>{const t=e.target;
+ if(t.dataset.bind){const [col,id,path]=t.dataset.bind.split('|');const o=S[col][id];if(!o)return;setPath(o,path,t.value);put(col,o,{quiet:true,delay:700});return}
+ if(t.dataset.param){const r=S.runs[ui.runId];const [i,k,f]=t.dataset.param.split('|').map((x,j)=>j<2?+x:x);const s=r.steps[i];if(!s.actual_parameters||!s.actual_parameters.length)s.actual_parameters=(s.planned_parameters||[]).map(p=>({name:p.name,value:'',unit:p.unit}));
+  while(s.actual_parameters.length<=k)s.actual_parameters.push({name:'',value:'',unit:''});s.actual_parameters[k][f]=t.value;if(!s.started_at)s.started_at=now();put('runs',r,{quiet:true,delay:700});return}
+ if(t.id==='libQ'){ui.q=t.value;const pos=t.selectionStart;render();const n=$('#libQ');n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}}
+ if(t.id==='pickQ'){ui.pick=t.value;const pos=t.selectionStart;renderSheet();const n=$('#pickQ');n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}}
+ if(t.id==='qTxt'){ui.qDraft=t.value;showChips()}});
+function showChips(){const el=$('#qChips');if(!el)return;const p=parseNote($('#qTxt').value||'');el.innerHTML=(p.equipment?`<span class="chip"><b>機台</b>${esc(p.equipment)}</span>`:'')+p.materials.map(m=>`<span class="chip"><b>材料</b>${esc(m)}</span>`).join('')+p.params.map(x=>`<span class="chip"><b>值</b>${esc(x.value)} ${esc(x.unit)}</span>`).join('')}
+let confirmFn=null;
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,i=b.dataset.i!=null?+b.dataset.i:null,id=b.dataset.id;const r=S.runs[ui.runId];const s=r&&i!=null?r.steps[i]:null;
+ const save=()=>put('runs',r);
+ switch(a){
+ case 'newRun':ui.sheet={type:'newRun'};renderSheet();setTimeout(()=>$('#nrTitle')&&$('#nrTitle').focus(),50);break;
+ case 'createRun':{const nr=newRun($('#nrTitle').value.trim(),$('#nrDate').value,$('#nrTpl').value);nr.wafer=$('#nrWafer').value.trim();nr.objective=$('#nrObj').value.trim();ui.sheet=null;ui.runId=nr.id;ui.open=0;put('runs',nr);break}
+ case 'openRun':ui.runId=id;ui.open=null;ui.lessonFor=null;window.scrollTo(0,0);render();break;
+ case 'back':ui.runId=null;render();break;
+ case 'toggleStep':ui.open=ui.open===i?-1:i;ui.lessonFor=null;render();break;
+ case 'sop':{s.sop_checks=s.sop_checks||[];s.sop_check_times=s.sop_check_times||[];s.sop_checks[+b.dataset.k]=!s.sop_checks[+b.dataset.k];s.sop_check_times[+b.dataset.k]=s.sop_checks[+b.dataset.k]?now():'';
+  const L=sopLines(s.sop).length;for(let k=0;k<L;k++)if(s.sop_checks[k]==null)s.sop_checks[k]=false;if(!s.started_at)s.started_at=now();save();break}
+ case 'reloadSop':{const rc=S.recipes[s.recipe_id];s.sop=rc.sop;s.sop_checks=sopLines(rc.sop).map(()=>false);s.sop_check_times=[];save();break}
+ case 'sameAsPlan':s.actual_parameters=clone(s.planned_parameters||[]).concat((s.actual_parameters||[]).slice((s.planned_parameters||[]).length));if(!s.started_at)s.started_at=now();save();toast('實際參數已填成計畫值，只改不同的就好');break;
+ case 'addParam':{if(!s.actual_parameters||!s.actual_parameters.length)s.actual_parameters=(s.planned_parameters||[]).map(p=>({name:p.name,value:'',unit:p.unit}));s.actual_parameters.push({name:'',value:'',unit:''});save();break}
+ case 'timerStart':s.timer_start=Date.now();if(!s.started_at)s.started_at=now();keepAwake(true);save();break;
+ case 'timerStop':delete s.timer_start;document.body.classList.remove('alarm');keepAwake(false);save();break;
+ case 'anomaly':s.anomaly=!s.anomaly;save();break;
+ case 'start':s.started_at=now();save();break;
+ case 'complete':ui.lessonFor=i;render();setTimeout(()=>$('#lessonTxt')&&$('#lessonTxt').focus(),50);break;
+ case 'completeSave':case 'completeSkip':{const txt=a==='completeSave'?($('#lessonTxt').value||'').trim():'';s.completed=true;if(!s.started_at)s.started_at=now();s.completed_at=now();delete s.timer_start;document.body.classList.remove('alarm');keepAwake(false);
+  if(txt){s.lesson=txt;const rc=S.recipes[s.recipe_id];if(rc){rc.lessons=rc.lessons||[];rc.lessons.push({date:now(),text:txt,run:r.title,run_id:r.id});put('recipes',rc,{quiet:true})}}
+  ui.lessonFor=null;const nx=r.steps.findIndex((x,k)=>k>i&&!x.completed);ui.open=nx>=0?nx:null;save();toast(txt?'已完成，踩雷已寫回 Recipe':'已完成');break}
+ case 'undo':s.completed=false;s.completed_at='';save();break;
+ case 'mvUp':if(i>0){[r.steps[i-1],r.steps[i]]=[r.steps[i],r.steps[i-1]];ui.open=i-1;save()}break;
+ case 'mvDn':if(i<r.steps.length-1){[r.steps[i+1],r.steps[i]]=[r.steps[i],r.steps[i+1]];ui.open=i+1;save()}break;
+ case 'rmStep':ui.sheet={type:'confirm',title:'刪除步驟「'+(s.name||'')+'」？',body:'這一步的紀錄會一起刪除。',yes:'刪除'};confirmFn=()=>{r.steps.splice(i,1);ui.open=null;save()};renderSheet();break;
+ case 'confirmYes':ui.sheet=null;renderSheet();if(confirmFn){const f=confirmFn;confirmFn=null;f()}break;
+ case 'addStep':ui.pick='';ui.sheet={type:'pick'};renderSheet();break;
+ case 'pickRecipe':r.steps.push(stepFromRecipe(S.recipes[id]));ui.open=r.steps.length-1;ui.sheet=null;save();break;
+ case 'addAdhoc':{const nm=$('#adhoc').value.trim();if(!nm){toast('請先輸入步驟名稱');break}const st=stepFromRecipe({id:'',name:nm});st.recipe_id='';r.steps.push(st);ui.open=r.steps.length-1;ui.sheet=null;save();break}
+ case 'runInfo':ui.sheet={type:'runInfo'};renderSheet();break;
+ case 'runMenu':ui.sheet={type:'runMenu'};renderSheet();break;
+ case 'closeSheet':ui.sheet=null;render();break;
+ case 'exportRun':ui.sheet=null;renderSheet();saveFile(`${r.date}_${r.title}.json`.replace(/[\\/:*?"<>|]/g,'_'),JSON.stringify(r,null,2));break;
+ case 'saveTpl':{const t={id:uid('template'),name:r.title,created_at:now(),steps:clone(r.steps).map(x=>Object.assign(x,{actual_parameters:[],run_notes:'',completed:false,started_at:'',completed_at:'',anomaly:false,sop_check_times:[],lesson:undefined,timer_start:undefined}))};ui.sheet=null;put('templates',t);toast('已存成模板「'+t.name+'」');break}
+ case 'dupRun':{const nr=newRun(r.title+'（複製）',today());nr.steps=clone(r.steps).map(x=>Object.assign(x,{instance_id:uid('step'),actual_parameters:[],run_notes:'',completed:false,started_at:'',completed_at:'',anomaly:false,sop_checks:sopLines(x.sop).map(()=>false),sop_check_times:[],lesson:undefined,timer_start:undefined}));nr.wafer='';ui.sheet=null;ui.runId=nr.id;ui.open=0;put('runs',nr);break}
+ case 'rmRun':ui.sheet.confirmDel=true;renderSheet();break;
+ case 'rmRunYes':{const rid=ui.runId;ui.sheet=null;ui.runId=null;del('runs',rid);break}
+ case 'saveNote':{const t=($('#qTxt').value||'').trim();if(!t){toast('先輸入內容');break}const n={id:uid('note'),at:now(),text:t,run_id:$('#qRun').value,parsed:parseNote(t)};ui.qDraft='';put('notes',n);toast('已記下');break}
+ case 'rmNote':ui.sheet={type:'confirm',title:'刪除這則快記？',yes:'刪除'};confirmFn=()=>del('notes',id);renderSheet();break;
+ case 'newRecipe':{const nr={id:uid('recipe'),name:'新 Recipe',category:'',material:'',equipment:'',duration_min:'',tags:'',parameters:[],sop:'',notes:'',attachments:[],lessons:[],created_at:now()};ui.recipeId=nr.id;put('recipes',nr);break}
+ case 'openRecipe':case 'editRecipeFromStep':ui.tab='lib';ui.recipeId=id;window.scrollTo(0,0);render();break;
+ case 'backLib':ui.recipeId=null;render();break;
+ case 'addRParam':{const rc=S.recipes[ui.recipeId];rc.parameters=rc.parameters||[];rc.parameters.push({name:'',value:'',unit:''});put('recipes',rc);break}
+ case 'rmRParam':{const rc=S.recipes[ui.recipeId];rc.parameters.splice(+b.dataset.k,1);put('recipes',rc);break}
+ case 'rmLesson':{const rc=S.recipes[ui.recipeId];rc.lessons.splice(+b.dataset.k,1);put('recipes',rc);break}
+ case 'dupRecipe':{const rc=clone(S.recipes[id]);rc.id=uid('recipe');rc.name+='（複製）';rc.lessons=[];rc.created_at=now();ui.recipeId=rc.id;put('recipes',rc);break}
+ case 'rmRecipe':ui.sheet={type:'confirm',title:'刪除 Recipe「'+S.recipes[id].name+'」？',body:'已經在 run 裡的步驟不受影響。',yes:'刪除'};confirmFn=()=>{ui.recipeId=null;del('recipes',id)};renderSheet();break;
+ case 'useRecipe':{const act=runs().filter(x=>progress(x).p<1||!x.steps.length);let tr=ui.runId&&S.runs[ui.runId]||act[0];if(!tr){tr=newRun('今日製程',today())}tr.steps.push(stepFromRecipe(S.recipes[id]));ui.tab='today';ui.runId=tr.id;ui.open=tr.steps.length-1;put('runs',tr);toast('已加到「'+tr.title+'」');break}
+ case 'importFile':$('#fileIn').click();break;
+ case 'importPaste':ui.sheet={type:'paste'};renderSheet();break;
+ case 'pasteGo':try{importData(JSON.parse($('#pasteTxt').value));ui.sheet=null;renderSheet()}catch(err){toast('無法匯入：'+err.message)}break;
+ case 'exportBackup':{const o={app:'process-assistant-v2',exported_at:now()};COLS.forEach(c=>o[c]=Object.values(S[c]));saveFile(`製程助手備份_${today()}.json`,JSON.stringify(o,null,2));break}
+ case 'exportCsv':saveFile(`製程紀錄_${today()}.csv`,buildCsv());break;
+ case 'exportRecipes':saveFile('recipes.json',JSON.stringify(v1Library(),null,2));break;
+ case 'copyText':{const t=ui.sheet&&ui.sheet.text||'';try{await navigator.clipboard.writeText(t);toast('已複製')}catch(err){const pre=$('.sheet pre');const rg=document.createRange();rg.selectNodeContents(pre);const sl=getSelection();sl.removeAllRanges();sl.addRange(rg);toast('已全選，請按系統的複製')}break}
+ }});
+$('#fileIn').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{importData(JSON.parse(String(rd.result).replace(/^﻿/,'')))}catch(err){toast('無法匯入：'+err.message)}e.target.value=''};rd.readAsText(f,'utf-8')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&ui.sheet){ui.sheet=null;renderSheet()}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&document.querySelector('[data-timer]'))tickTimers()});
+
+initStore();
+</script>
+
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
+</body></html>
